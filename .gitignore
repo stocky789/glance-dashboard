@@ -3,3 +3,5 @@
 /playground
 /.idea
 /glance*.yml
+/glance
+/glance.log

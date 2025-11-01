@@ -81,6 +81,12 @@ func newWidget(widgetType string) (widget, error) {
 		w = &serverStatsWidget{}
 	case "to-do":
 		w = &todoWidget{}
+	case "metrics":
+		w = &metricsWidget{}
+	case "advanced-search":
+		w = &advancedSearchWidget{}
+	case "activity-log":
+		w = &activityLogWidget{}
 	default:
 		return nil, fmt.Errorf("unknown widget type: %s", widgetType)
 	}
