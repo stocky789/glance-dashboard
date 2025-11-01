@@ -59,76 +59,42 @@ func (w *metricsWidget) update(ctx context.Context) {
 	}
 
 	w.renderMetrics(metrics)
-	w.ContentAvailable = true
 }
 
 func (w *metricsWidget) renderMetrics(m metricsData) {
 	tmpl := template.Must(template.New("metrics").Parse(`
-		<div class="metrics-dashboard">
-			<div class="metrics-section">
-				<h3>System</h3>
-				<div class="metric-item">
-					<span>Memory:</span>
-					<strong>{{.SystemMetrics.Memory}} MB</strong>
-				</div>
-				<div class="metric-item">
-					<span>Goroutines:</span>
-					<strong>{{.SystemMetrics.Goroutines}}</strong>
-				</div>
-				<div class="metric-item">
-					<span>Uptime:</span>
-					<strong>{{.SystemMetrics.Uptime}}</strong>
-				</div>
+		<div class="list list-gap-12">
+			<div class="list-horizontal list-gap-10">
+				<span class="size-h4 color-primary">{{.SystemMetrics.Memory}}</span>
+				<span>MB Memory</span>
 			</div>
-			<div class="metrics-section">
-				<h3>API</h3>
-				<div class="metric-item">
-					<span>Requests:</span>
-					<strong>{{.APIMetrics.TotalRequests}}</strong>
-				</div>
-				<div class="metric-item">
-					<span>Avg Latency:</span>
-					<strong>{{.APIMetrics.AverageLatency | printf "%.1f"}} ms</strong>
-				</div>
-				<div class="metric-item">
-					<span>Rate Limited:</span>
-					<strong>{{.APIMetrics.RateLimited}}</strong>
-				</div>
+			<div class="list-horizontal list-gap-10">
+				<span class="size-h4 color-primary">{{.SystemMetrics.Goroutines}}</span>
+				<span>Goroutines</span>
+			</div>
+			<div class="list-horizontal list-gap-10">
+				<span class="size-h4 color-primary">{{.SystemMetrics.Uptime}}</span>
+				<span>Uptime</span>
+			</div>
+			<div class="list-horizontal list-gap-10">
+				<span class="size-h4 color-primary">{{.APIMetrics.TotalRequests}}</span>
+				<span>API Requests</span>
+			</div>
+			<div class="list-horizontal list-gap-10">
+				<span class="size-h4 color-primary">{{.APIMetrics.AverageLatency | printf "%.1f"}}</span>
+				<span>ms Latency</span>
+			</div>
+			<div class="list-horizontal list-gap-10">
+				<span class="size-h4 color-primary">{{.APIMetrics.RateLimited}}</span>
+				<span>Rate Limited</span>
 			</div>
 		</div>
-		<style>
-			.metrics-dashboard {
-				display: grid;
-				grid-template-columns: 1fr 1fr;
-				gap: 1rem;
-				padding: 1rem;
-			}
-			.metrics-section {
-				background: rgba(0,0,0,0.1);
-				border-radius: 8px;
-				padding: 0.75rem;
-			}
-			.metrics-section h3 {
-				margin: 0 0 0.5rem 0;
-				font-size: 0.9rem;
-				opacity: 0.7;
-			}
-			.metric-item {
-				display: flex;
-				justify-content: space-between;
-				padding: 0.25rem 0;
-				font-size: 0.85rem;
-			}
-			.metric-item strong {
-				color: var(--primary-color, #00ff00);
-				font-weight: bold;
-			}
-		</style>
 	`))
-
 	w.templateBuffer.Reset()
 	tmpl.Execute(&w.templateBuffer, m)
+	w.ContentAvailable = true
 }
+
 
 func (w *metricsWidget) Render() template.HTML {
 	return template.HTML(w.templateBuffer.String())

@@ -1,0 +1,28 @@
+{{ define "widget-content" }}
+<div class="list list-gap-12">
+    <div class="list-horizontal list-gap-10">
+        <span class="size-h4 color-primary">{{.SystemMetrics.Memory}}</span>
+        <span>MB Memory</span>
+    </div>
+    <div class="list-horizontal list-gap-10">
+        <span class="size-h4 color-primary">{{.SystemMetrics.Goroutines}}</span>
+        <span>Goroutines</span>
+    </div>
+    <div class="list-horizontal list-gap-10">
+        <span class="size-h4 color-primary">{{.SystemMetrics.Uptime}}</span>
+        <span>Uptime</span>
+    </div>
+    <div class="list-horizontal list-gap-10">
+        <span class="size-h4 color-primary">{{.APIMetrics.TotalRequests}}</span>
+        <span>API Requests</span>
+    </div>
+    <div class="list-horizontal list-gap-10">
+        <span class="size-h4 color-primary">{{.APIMetrics.AverageLatency | printf "%.1f"}}</span>
+        <span>ms Latency</span>
+    </div>
+    <div class="list-horizontal list-gap-10">
+        <span class="size-h4 color-primary">{{.APIMetrics.RateLimited}}</span>
+        <span>Rate Limited</span>
+    </div>
+</div>
+{{ end }}
