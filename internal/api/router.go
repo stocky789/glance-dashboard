@@ -68,6 +68,12 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/api/v1/metrics", s.handleMetrics)
 	s.mux.HandleFunc("/api/v1/metrics/widgets/", s.routeMetricsEndpoints)
 
+	// Search endpoint
+	s.mux.HandleFunc("/api/v1/search", s.handleSearch)
+
+	// Activity endpoint
+	s.mux.HandleFunc("/api/v1/activity", s.handleActivity)
+
 	// Widget data endpoints
 	s.mux.HandleFunc("/api/v1/widgets/", s.routeWidgetEndpoints)
 }

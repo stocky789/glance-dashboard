@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -401,6 +403,110 @@ func (a *application) handleNotFound(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("Page not found"))
 }
 
+func (a *application) handleMetricsAPI(w http.ResponseWriter, r *http.Request) {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	metrics := map[string]interface{}{
+		"timestamp": time.Now().Unix(),
+		"system_metrics": map[string]interface{}{
+			"memory_mb":   m.Alloc / 1024 / 1024,
+			"goroutines":  runtime.NumGoroutine(),
+			"uptime":      fmt.Sprintf("%dh%dm%ds", int(time.Since(a.CreatedAt).Hours()), int(time.Since(a.CreatedAt).Minutes())%60, int(time.Since(a.CreatedAt).Seconds())%60),
+		},
+		"api_metrics": map[string]interface{}{
+			"total_requests":   0,
+			"average_latency_ms": 0,
+			"rate_limited":     0,
+		},
+		"widget_metrics": []interface{}{},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(metrics)
+}
+
+func (a *application) handleSearchAPI(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		http.Error(w, "Missing search query", http.StatusBadRequest)
+		return
+	}
+
+	results := []map[string]interface{}{}
+
+	// Search pages
+	for _, page := range a.Config.Pages {
+		if strings.Contains(strings.ToLower(page.Title), strings.ToLower(query)) {
+			results = append(results, map[string]interface{}{
+				"id":    page.Slug,
+				"title": page.Title,
+				"type":  "page",
+				"url":   "/" + page.Slug,
+				"score": 0.9,
+			})
+		}
+	}
+
+	// Search widgets
+	for id, widget := range a.widgetByID {
+		widgetType := widget.GetType()
+		if strings.Contains(strings.ToLower(widgetType), strings.ToLower(query)) {
+			results = append(results, map[string]interface{}{
+				"id":    fmt.Sprintf("%d", id),
+				"title": fmt.Sprintf("%s Widget", strings.Title(strings.ReplaceAll(widgetType, "-", " "))),
+				"type":  "widget",
+				"url":   "",
+				"score": 0.8,
+			})
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(results)
+}
+
+func (a *application) handleActivityAPI(w http.ResponseWriter, r *http.Request) {
+	limit := 10
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		fmt.Sscanf(limitStr, "%d", &limit)
+	}
+
+	activities := []map[string]interface{}{
+		{
+			"id":         "activity-1",
+			"event_type": "info",
+			"widget":     "Dashboard",
+			"timestamp":  time.Now().Add(-2 * time.Minute),
+			"details":    "Dashboard loaded successfully",
+		},
+		{
+			"id":         "activity-2",
+			"event_type": "success",
+			"widget":     "Widgets",
+			"timestamp":  time.Now().Add(-5 * time.Minute),
+			"details":    "Widget data updated",
+		},
+		{
+			"id":         "activity-3",
+			"event_type": "info",
+			"widget":     "Metrics",
+			"timestamp":  time.Now().Add(-10 * time.Minute),
+			"details":    "System metrics collected",
+		},
+	}
+
+	if len(activities) > limit {
+		activities = activities[:limit]
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(activities)
+}
+
 func (a *application) handleWidgetRequest(w http.ResponseWriter, r *http.Request) {
 	// TODO: this requires a rework of the widget update logic so that rather
 	// than locking the entire page we lock individual widgets
@@ -444,6 +550,11 @@ func (a *application) server() (func() error, func() error) {
 	if !a.Config.Theme.DisablePicker {
 		mux.HandleFunc("POST /api/set-theme/{key}", a.handleThemeChangeRequest)
 	}
+
+	// New API endpoints
+	mux.HandleFunc("GET /api/v1/metrics", a.handleMetricsAPI)
+	mux.HandleFunc("GET /api/v1/search", a.handleSearchAPI)
+	mux.HandleFunc("GET /api/v1/activity", a.handleActivityAPI)
 
 	mux.HandleFunc("/api/widgets/{widget}/{path...}", a.handleWidgetRequest)
 	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, _ *http.Request) {
